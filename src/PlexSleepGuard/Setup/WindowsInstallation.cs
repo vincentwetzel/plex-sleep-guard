@@ -1,4 +1,7 @@
 using System.Diagnostics;
+using System.Security;
+using System.Security.Principal;
+using System.Text;
 
 namespace PlexSleepGuard.Setup;
 
@@ -68,9 +71,23 @@ internal static class WindowsInstallation
 
     public static bool RegisterAtLogon(string executablePath)
     {
-        var taskAction = $"\"{executablePath}\" --background";
-        return RunScheduledTasks(
-            "/Create", "/F", "/SC", "ONLOGON", "/TN", "PlexSleepGuard", "/TR", taskAction, "/RL", "LIMITED");
+        var taskXmlPath = Path.Combine(Path.GetTempPath(), $"PlexSleepGuard-{Guid.NewGuid():N}.xml");
+        try
+        {
+            File.WriteAllText(taskXmlPath, CreateTaskXml(executablePath), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            return RunScheduledTasks("/Create", "/F", "/TN", "PlexSleepGuard", "/XML", taskXmlPath);
+        }
+        finally
+        {
+            try
+            {
+                File.Delete(taskXmlPath);
+            }
+            catch (IOException)
+            {
+                // The temporary task definition can be cleaned up later.
+            }
+        }
     }
 
     public static bool RemoveAtLogon() => RunScheduledTasks(
@@ -136,5 +153,53 @@ internal static class WindowsInstallation
 
         process.WaitForExit();
         return process.ExitCode == 0;
+    }
+
+    private static string CreateTaskXml(string executablePath)
+    {
+        var userSid = WindowsIdentity.GetCurrent().User?.Value;
+        if (string.IsNullOrWhiteSpace(userSid))
+        {
+            throw new InvalidOperationException("Windows could not determine the current user.");
+        }
+
+        var escapedExecutablePath = SecurityElement.Escape(executablePath);
+        var escapedWorkingDirectory = SecurityElement.Escape(Path.GetDirectoryName(executablePath) ?? string.Empty);
+        return $"""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+              <RegistrationInfo>
+                <Description>PlexSleepGuard background Plex sleep monitor</Description>
+              </RegistrationInfo>
+              <Triggers>
+                <LogonTrigger>
+                  <Enabled>true</Enabled>
+                </LogonTrigger>
+              </Triggers>
+              <Principals>
+                <Principal id="Author">
+                  <UserId>{userSid}</UserId>
+                  <LogonType>InteractiveToken</LogonType>
+                  <RunLevel>LeastPrivilege</RunLevel>
+                </Principal>
+              </Principals>
+              <Settings>
+                <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+                <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+                <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+                <AllowHardTerminate>true</AllowHardTerminate>
+                <StartWhenAvailable>true</StartWhenAvailable>
+                <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+                <Priority>7</Priority>
+              </Settings>
+              <Actions Context="Author">
+                <Exec>
+                  <Command>{escapedExecutablePath}</Command>
+                  <Arguments>--background</Arguments>
+                  <WorkingDirectory>{escapedWorkingDirectory}</WorkingDirectory>
+                </Exec>
+              </Actions>
+            </Task>
+            """;
     }
 }
