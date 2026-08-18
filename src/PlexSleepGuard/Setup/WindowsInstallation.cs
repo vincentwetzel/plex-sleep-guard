@@ -90,6 +90,7 @@ internal static class WindowsInstallation
 
     private static bool RunScheduledTasks(params string[] arguments)
     {
+        var creatingTask = arguments.Any(static argument => string.Equals(argument, "/Create", StringComparison.OrdinalIgnoreCase));
         var startInfo = new ProcessStartInfo
         {
             FileName = "schtasks.exe",
@@ -102,6 +103,30 @@ internal static class WindowsInstallation
         {
             startInfo.ArgumentList.Add(argument);
         }
+
+        using var process = Process.Start(startInfo);
+        if (process is null)
+        {
+            return false;
+        }
+
+        process.WaitForExit();
+        return process.ExitCode == 0 || (creatingTask && TaskExists());
+    }
+
+    private static bool TaskExists()
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "schtasks.exe",
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+        startInfo.ArgumentList.Add("/Query");
+        startInfo.ArgumentList.Add("/TN");
+        startInfo.ArgumentList.Add("PlexSleepGuard");
 
         using var process = Process.Start(startInfo);
         if (process is null)
