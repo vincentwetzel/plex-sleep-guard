@@ -1,0 +1,38 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: |
+          dotnet restore .\src\PlexSleepGuard\PlexSleepGuard.csproj
+          dotnet restore .\tests\PlexSleepGuard.Tests\PlexSleepGuard.Tests.csproj
+
+      - name: Test
+        run: dotnet test .\tests\PlexSleepGuard.Tests\PlexSleepGuard.Tests.csproj -c Release --no-restore
+
+      - name: Publish self-contained EXE
+        run: dotnet publish .\src\PlexSleepGuard\PlexSleepGuard.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -o .\dist
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: PlexSleepGuard-win-x64
+          path: dist/PlexSleepGuard.exe

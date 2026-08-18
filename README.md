@@ -27,29 +27,42 @@ Logs are plain text under `%LOCALAPPDATA%\PlexSleepGuard\Logs\`, with approximat
 
 ## Run and diagnostics
 
-From the repository root:
+From the installed or published EXE:
 
 ```powershell
-dotnet run --project .\src\PlexSleepGuard\PlexSleepGuard.csproj -- --status
-dotnet run --project .\src\PlexSleepGuard\PlexSleepGuard.csproj -- --test-power-request
-dotnet run --project .\src\PlexSleepGuard\PlexSleepGuard.csproj -- --console
+PlexSleepGuard.exe --status
+PlexSleepGuard.exe --status --quiet
+PlexSleepGuard.exe --setup
+PlexSleepGuard.exe --test-power-request
+PlexSleepGuard.exe --console
 ```
 
-`--status` queries Plex and exits without creating a power request. `--test-power-request` holds the system-required request for about 60 seconds; inspect it from another terminal with `powercfg /requests`.
+Double-clicking the EXE the first time opens a short setup prompt, saves the token, installs automatic startup, and launches the background monitor. Later launches run quietly. `--status` queries Plex and exits without creating a power request; add `--quiet` to suppress status output while retaining the exit code. `--setup` changes the token. `--uninstall` removes automatic startup while retaining configuration and logs. `--test-power-request` holds the system-required request for about 60 seconds; inspect it from another terminal with `powercfg /requests`. `--background` is used by the logon task and is normally not run manually.
+
+If upgrading from an older script-based installation, run `PlexSleepGuard.exe --setup` once so the EXE can replace the old installation and update the startup task.
 
 ## Install and uninstall
 
-Run from PowerShell in the repository root:
+No installer or administrator permission is required. Copy the self-contained `PlexSleepGuard.exe` to a Windows PC and run it. Setup copies it to `%LOCALAPPDATA%\PlexSleepGuard\PlexSleepGuard.exe` and registers the limited-permission `PlexSleepGuard` task to start at logon.
+
+To remove automatic startup while keeping configuration and logs:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\install.ps1
-powershell -ExecutionPolicy Bypass -File .\uninstall.ps1
+PlexSleepGuard.exe --uninstall
 ```
 
-The installer publishes a self-contained x64 single-file executable to `%LOCALAPPDATA%\PlexSleepGuard\` and registers a limited-permission Scheduled Task at interactive logon. It does not require elevation. Uninstall retains config and logs; use `-RemoveData` when you explicitly want those removed.
+The installed EXE and its data directory can then be deleted manually if desired. `--uninstall` does not delete the token, configuration, or logs.
+
+## For developers
+
+```powershell
+dotnet publish .\src\PlexSleepGuard\PlexSleepGuard.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o .\dist
+```
+
+Copy `dist\PlexSleepGuard.exe` to another Windows PC and double-click it. No source code, PowerShell scripts, .NET installation, or separate installer is required. The EXE copies itself to `%LOCALAPPDATA%\PlexSleepGuard\` and registers a per-user logon task.
 
 ## Troubleshooting
 
 Check `powercfg /requests` during a grace period and review the current day's log. Confirm Plex is listening on `127.0.0.1:32400`, the token is valid, and Windows or security software is not blocking local HTTP. More troubleshooting details are in [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md), and [agents.md](agents.md) for project guidance.
+See [docs/CONFIGURATION.md](docs/CONFIGURATION.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md), and [agents.md](agents.md) for more detail.

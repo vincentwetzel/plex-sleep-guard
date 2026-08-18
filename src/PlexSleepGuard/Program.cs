@@ -1,6 +1,7 @@
 using PlexSleepGuard.Configuration;
 using PlexSleepGuard.Plex;
 using PlexSleepGuard.Power;
+using PlexSleepGuard.Setup;
 using PlexSleepGuard.State;
 using System.Runtime.InteropServices;
 
@@ -12,13 +13,34 @@ internal static class Program
     {
         var console = args.Any(static argument => string.Equals(argument, "--console", StringComparison.OrdinalIgnoreCase));
         var status = args.Any(static argument => string.Equals(argument, "--status", StringComparison.OrdinalIgnoreCase));
+        var quietStatus = args.Any(static argument => string.Equals(argument, "--quiet", StringComparison.OrdinalIgnoreCase));
         var testPower = args.Any(static argument => string.Equals(argument, "--test-power-request", StringComparison.OrdinalIgnoreCase));
-        if (console || status || testPower)
+        var setup = args.Any(static argument => string.Equals(argument, "--setup", StringComparison.OrdinalIgnoreCase));
+        var uninstall = args.Any(static argument => string.Equals(argument, "--uninstall", StringComparison.OrdinalIgnoreCase));
+        var background = args.Any(static argument => string.Equals(argument, "--background", StringComparison.OrdinalIgnoreCase));
+
+        if (uninstall)
+        {
+            ConsoleMode.EnsureConsole();
+            WindowsInstallation.StopOtherInstances();
+            var removed = WindowsInstallation.RemoveAtLogon();
+            Console.WriteLine(removed
+                ? "Automatic startup removed. You can delete this EXE if you no longer need it."
+                : "Automatic startup was not registered. You can delete this EXE if you no longer need it.");
+            return removed ? 0 : 1;
+        }
+
+        if (setup || (!status && !testPower && !background && !File.Exists(AppConfiguration.FilePath)))
+        {
+            return await SetupWizard.RunAsync().ConfigureAwait(false);
+        }
+
+        if (console || (status && !quietStatus) || testPower)
         {
             ConsoleMode.EnsureConsole();
         }
 
-        using var log = new FileLog(console || status || testPower);
+        using var log = new FileLog(console || (status && !quietStatus) || testPower);
         log.Information("PlexSleepGuard starting.");
         var configuration = AppConfiguration.Load(log);
 
@@ -26,7 +48,7 @@ internal static class Program
         {
             if (status)
             {
-                return await RunStatusAsync(configuration, log).ConfigureAwait(false);
+                return await RunStatusAsync(configuration, log, !quietStatus).ConfigureAwait(false);
             }
 
             if (testPower)
@@ -147,25 +169,36 @@ internal static class Program
         }
     }
 
-    private static async Task<int> RunStatusAsync(AppConfiguration configuration, ILog log)
+    private static async Task<int> RunStatusAsync(AppConfiguration configuration, ILog log, bool printOutput)
     {
         using var monitor = new PlexMonitor(configuration, log);
         var result = await monitor.PollAsync(CancellationToken.None).ConfigureAwait(false);
-        Console.WriteLine($"Plex server: {configuration.PlexServerUrl}");
-        Console.WriteLine($"Poll interval: {configuration.PollIntervalSeconds}s");
-        Console.WriteLine($"Grace period: {configuration.GracePeriodMinutes}m");
-        Console.WriteLine($"Token configured: {!string.IsNullOrWhiteSpace(configuration.PlexToken)}");
-        Console.WriteLine($"Reachable: {result.Success}");
+        if (printOutput)
+        {
+            Console.WriteLine($"Plex server: {configuration.PlexServerUrl}");
+            Console.WriteLine($"Poll interval: {configuration.PollIntervalSeconds}s");
+            Console.WriteLine($"Grace period: {configuration.GracePeriodMinutes}m");
+            Console.WriteLine($"Token configured: {!string.IsNullOrWhiteSpace(configuration.PlexToken)}");
+            Console.WriteLine($"Reachable: {result.Success}");
+        }
+
         if (!result.Success)
         {
-            Console.WriteLine($"Error: {result.Error}");
+            if (printOutput)
+            {
+                Console.WriteLine($"Error: {result.Error}");
+            }
+
             return 1;
         }
 
-        Console.WriteLine($"Playback sessions: {result.Sessions.Count}");
-        foreach (var session in result.Sessions)
+        if (printOutput)
         {
-            Console.WriteLine($"- {session.Title} ({session.Type}): {session.State}");
+            Console.WriteLine($"Playback sessions: {result.Sessions.Count}");
+            foreach (var session in result.Sessions)
+            {
+                Console.WriteLine($"- {session.Title} ({session.Type}): {session.State}");
+            }
         }
 
         return 0;
@@ -221,7 +254,7 @@ internal static class Program
         public void Dispose() => Release();
     }
 
-    private static class ConsoleMode
+    internal static class ConsoleMode
     {
         public static void EnsureConsole()
         {
