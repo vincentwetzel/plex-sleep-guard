@@ -1,0 +1,10 @@
+# Secrets and generated artifacts
+**/config.json
+**/*.log
+**/bin/**
+**/obj/**
+**/.publish/**
+**/TestResults/**
+
+# Source-control metadata
+**/.git/**

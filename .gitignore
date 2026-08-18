@@ -1,0 +1,27 @@
+# .NET build output
+**/bin/
+**/obj/
+.publish/
+TestResults/
+.tmp-*/
+
+# Local credentials and runtime data
+config.json
+**/PlexSleepGuard/config.json
+*.local.json
+
+# Logs and local app data accidentally copied into the repository
+Logs/
+*.log
+
+# IDE/user files
+.vs/
+.vscode/
+*.user
+*.suo
+
+# PowerShell/editor/OS noise
+*.tmp
+*.bak
+Thumbs.db
+Desktop.ini
