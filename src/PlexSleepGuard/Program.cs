@@ -18,6 +18,7 @@ internal static class Program
         var setup = args.Any(static argument => string.Equals(argument, "--setup", StringComparison.OrdinalIgnoreCase));
         var uninstall = args.Any(static argument => string.Equals(argument, "--uninstall", StringComparison.OrdinalIgnoreCase));
         var background = args.Any(static argument => string.Equals(argument, "--background", StringComparison.OrdinalIgnoreCase));
+        var normalLaunch = args.Length == 0;
 
         if (uninstall)
         {
@@ -33,6 +34,29 @@ internal static class Program
         if (setup || (!status && !testPower && !background && !File.Exists(AppConfiguration.FilePath)))
         {
             return await SetupWizard.RunAsync().ConfigureAwait(false);
+        }
+
+        using var instanceGuard = !status && !testPower
+            ? SingleInstanceGuard.TryAcquire()
+            : null;
+        if (!status && !testPower && instanceGuard is null)
+        {
+            if (!background)
+            {
+                UserNotification.ShowInformation(
+                    "PlexSleepGuard is already running.\n\n" +
+                    "Only one copy is needed. It is monitoring Plex in the background.");
+            }
+
+            return 0;
+        }
+
+        if (normalLaunch)
+        {
+            UserNotification.ShowInformation(
+                "PlexSleepGuard is now running in the background.\n\n" +
+                "It will monitor Plex and help Windows sleep after playback ends.\n\n" +
+                "Use --status in PowerShell to check it.");
         }
 
         if (console || (status && !quietStatus) || testPower)

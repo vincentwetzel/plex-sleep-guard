@@ -37,7 +37,7 @@ PlexSleepGuard.exe --test-power-request
 PlexSleepGuard.exe --console
 ```
 
-Double-clicking the EXE the first time opens a short setup prompt, saves the token, installs automatic startup, and launches the background monitor. Later launches run quietly. `--status` queries Plex and exits without creating a power request; add `--quiet` to suppress status output while retaining the exit code. `--setup` changes the token. `--uninstall` removes automatic startup while retaining configuration and logs. `--test-power-request` holds the system-required request for about 60 seconds; inspect it from another terminal with `powercfg /requests`. `--background` is used by the logon task and is normally not run manually.
+Double-clicking the EXE the first time opens a short setup prompt, saves the token, installs automatic startup, and launches the background monitor. Later double-clicks show a confirmation that it is running in the background; starting a second copy is prevented. `--status` queries Plex and exits without creating a power request; add `--quiet` to suppress status output while retaining the exit code. `--setup` changes the token. `--uninstall` removes automatic startup while retaining configuration and logs. `--test-power-request` holds the system-required request for about 60 seconds; inspect it from another terminal with `powercfg /requests`. `--background` is used by the logon task and is normally not run manually.
 
 If upgrading from an older script-based installation, run `PlexSleepGuard.exe --setup` once so the EXE can replace the old installation and update the startup task.
 
