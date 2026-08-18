@@ -24,14 +24,21 @@ internal static class WindowsInstallation
         return InstalledExecutablePath;
     }
 
+    public static bool IsRunningFromInstalledExecutable()
+    {
+        var current = Environment.ProcessPath;
+        return !string.IsNullOrWhiteSpace(current) &&
+               string.Equals(Path.GetFullPath(current), Path.GetFullPath(InstalledExecutablePath), StringComparison.OrdinalIgnoreCase);
+    }
+
     public static void StopOtherInstances()
     {
         var currentId = Environment.ProcessId;
-        foreach (var process in Process.GetProcessesByName("PlexSleepGuard"))
+        foreach (var process in Process.GetProcesses())
         {
             using (process)
             {
-                if (process.Id == currentId)
+                if (process.Id == currentId || !IsPlexSleepGuardProcess(process))
                 {
                     continue;
                 }
@@ -51,6 +58,12 @@ internal static class WindowsInstallation
                 }
             }
         }
+    }
+
+    private static bool IsPlexSleepGuardProcess(Process process)
+    {
+        return string.Equals(process.ProcessName, "PlexSleepGuard", StringComparison.OrdinalIgnoreCase) ||
+               process.ProcessName.StartsWith("PlexSleepGuard (", StringComparison.OrdinalIgnoreCase);
     }
 
     public static bool RegisterAtLogon(string executablePath)

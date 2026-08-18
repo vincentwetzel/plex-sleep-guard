@@ -36,6 +36,20 @@ internal static class Program
             return await SetupWizard.RunAsync().ConfigureAwait(false);
         }
 
+        if (normalLaunch && !WindowsInstallation.IsRunningFromInstalledExecutable())
+        {
+            WindowsInstallation.StopOtherInstances();
+            var installedPath = WindowsInstallation.EnsureInstalledExecutable();
+            var registered = WindowsInstallation.RegisterAtLogon(installedPath);
+            WindowsInstallation.StartInstalled(installedPath);
+            UserNotification.ShowInformation(registered
+                ? "PlexSleepGuard is now running in the background.\n\n" +
+                  "You can close this message. PlexSleepGuard will start automatically when you sign in."
+                : "PlexSleepGuard is running in the background.\n\n" +
+                  "It could not update automatic startup, but it is working for now.");
+            return registered ? 0 : 1;
+        }
+
         using var instanceGuard = !status && !testPower
             ? SingleInstanceGuard.TryAcquire()
             : null;
@@ -51,13 +65,13 @@ internal static class Program
             return 0;
         }
 
-        if (normalLaunch)
-        {
-            UserNotification.ShowInformation(
-                "PlexSleepGuard is now running in the background.\n\n" +
-                "It will monitor Plex and help Windows sleep after playback ends.\n\n" +
-                "Use --status in PowerShell to check it.");
-        }
+            if (normalLaunch)
+            {
+                UserNotification.ShowInformation(
+                    "PlexSleepGuard is now running in the background.\n\n" +
+                    "It will monitor Plex and help Windows sleep after playback ends.\n\n" +
+                    "You can close this message; nothing else is needed.");
+            }
 
         if (console || (status && !quietStatus) || testPower)
         {
