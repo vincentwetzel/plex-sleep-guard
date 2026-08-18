@@ -90,15 +90,20 @@ internal static class WindowsInstallation
 
     private static bool RunScheduledTasks(params string[] arguments)
     {
-        using var process = Process.Start(new ProcessStartInfo
+        var startInfo = new ProcessStartInfo
         {
             FileName = "schtasks.exe",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            CreateNoWindow = true,
-            Arguments = string.Join(" ", arguments.Select(QuoteArgument))
-        });
+            CreateNoWindow = true
+        };
+        foreach (var argument in arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        using var process = Process.Start(startInfo);
         if (process is null)
         {
             return false;
@@ -107,6 +112,4 @@ internal static class WindowsInstallation
         process.WaitForExit();
         return process.ExitCode == 0;
     }
-
-    private static string QuoteArgument(string argument) => $"\"{argument.Replace("\"", "\\\"")}\"";
 }
