@@ -91,15 +91,42 @@ internal static class UpdateApplier
 
     private static void StartBackground(string executablePath)
     {
+        if (TryRunScheduledTask())
+        {
+            return;
+        }
+
         var startInfo = new ProcessStartInfo
         {
             FileName = executablePath,
             WorkingDirectory = Path.GetDirectoryName(executablePath),
             UseShellExecute = true,
-            WindowStyle = ProcessWindowStyle.Hidden
+            WindowStyle = ProcessWindowStyle.Hidden,
+            Arguments = "--background"
         };
-        startInfo.ArgumentList.Add("--background");
         _ = Process.Start(startInfo);
+    }
+
+    private static bool TryRunScheduledTask()
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "schtasks.exe",
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        startInfo.ArgumentList.Add("/Run");
+        startInfo.ArgumentList.Add("/TN");
+        startInfo.ArgumentList.Add("PlexSleepGuard");
+
+        using var process = Process.Start(startInfo);
+        if (process is null)
+        {
+            return false;
+        }
+
+        process.WaitForExit();
+        return process.ExitCode == 0;
     }
 
     private static bool TryGetOption(string[] args, string option, out string value)
