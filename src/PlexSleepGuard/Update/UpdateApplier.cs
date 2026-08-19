@@ -176,5 +176,9 @@ internal static class UpdateApplier
         {
             // The temporary file can be cleaned up by the OS later.
         }
+        catch (UnauthorizedAccessException)
+        {
+            // Windows may keep the running updater executable locked until it exits.
+        }
     }
 }

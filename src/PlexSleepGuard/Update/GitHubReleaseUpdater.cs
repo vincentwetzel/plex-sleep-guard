@@ -140,6 +140,10 @@ internal static class GitHubReleaseUpdater
         {
             // The temporary file can be cleaned up by the OS later.
         }
+        catch (UnauthorizedAccessException)
+        {
+            // Windows may briefly keep a temporary update file locked.
+        }
     }
 
     private sealed class GitHubRelease
