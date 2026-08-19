@@ -56,7 +56,9 @@ internal static class SetupWizard
         }
 
         Console.WriteLine("Plex accepted the token.");
-        Console.WriteLine("Installed. PlexSleepGuard will run automatically when you sign in.");
+        Console.WriteLine($"Installed application: {installedPath}");
+        Console.WriteLine("PlexSleepGuard will run automatically when you sign in.");
+        Console.WriteLine("You can now delete the downloaded setup EXE.");
         WindowsInstallation.StartInstalled(installedPath);
         return 0;
     }

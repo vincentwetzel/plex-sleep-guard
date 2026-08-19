@@ -1,7 +1,7 @@
 # Agent and contributor guidance
 
 - Target .NET 10, Windows x64, and keep the application dependency-light.
-- The user-facing deliverable is the self-contained single-file `PlexSleepGuard.exe`; keep first-run setup inside the EXE.
+- The user-facing download is the self-contained single-file `PlexSleepGuard-Setup.exe`; setup installs the runtime as `PlexSleepGuard.exe` under `%LOCALAPPDATA%\PlexSleepGuard`.
 - Do not add a GUI framework, Windows Service, inbound listener, input simulation, or last-input manipulation.
 - Never hardcode, print, or commit Plex tokens. Use `%LOCALAPPDATA%\PlexSleepGuard\config.json` for local credentials.
 - Power inhibition is allowed only in `GRACE_PERIOD`, must use system-required behavior without display-required behavior, and must be cleared on every exit path.

@@ -37,13 +37,13 @@ PlexSleepGuard.exe --test-power-request
 PlexSleepGuard.exe --console
 ```
 
-Double-clicking the EXE the first time opens a short setup prompt, saves the token, installs automatic startup, and launches the background monitor. Later double-clicks confirm that it is running in the background; starting a second copy is prevented. If Windows renamed a downloaded file such as `PlexSleepGuard (1).exe`, it is copied to the normal installed location and the renamed copy exits. `--status` queries Plex and exits without creating a power request; run it as `PlexSleepGuard.exe --status` from PowerShell. Add `--quiet` to suppress status output while retaining the exit code. `--setup` changes the token. `--uninstall` removes automatic startup while retaining configuration and logs. `--test-power-request` holds the system-required request for about 60 seconds; inspect it from another terminal with `powercfg /requests`. `--background` is used by the logon task and is normally not run manually.
+Double-clicking `PlexSleepGuard-Setup.exe` the first time opens a short setup prompt, saves the token, installs automatic startup, and launches the background monitor. Setup shows the exact installed path; the downloaded setup EXE can then be deleted. Later double-clicks confirm that the installed app is running in the background; starting a second copy is prevented. `--status` queries Plex and exits without creating a power request; run it as `PlexSleepGuard.exe --status` from PowerShell. Add `--quiet` to suppress status output while retaining the exit code. `--setup` changes the token. `--uninstall` removes automatic startup while retaining configuration and logs. `--test-power-request` holds the system-required request for about 60 seconds; inspect it from another terminal with `powercfg /requests`. `--background` is used by the logon task and is normally not run manually.
 
 If upgrading from an older script-based installation, run `PlexSleepGuard.exe --setup` once so the EXE can replace the old installation and update the startup task.
 
 ## Install and uninstall
 
-No installer or administrator permission is required. Copy the self-contained `PlexSleepGuard.exe` to a Windows PC and run it. Setup copies it to `%LOCALAPPDATA%\PlexSleepGuard\PlexSleepGuard.exe` and registers the limited-permission `PlexSleepGuard` task to start at logon.
+No administrator permission is required. Download and run `PlexSleepGuard-Setup.exe`. Setup copies it to `%LOCALAPPDATA%\PlexSleepGuard\PlexSleepGuard.exe`, displays that final path, and registers the limited-permission `PlexSleepGuard` task to start at logon. The downloaded setup EXE is not needed after setup completes.
 
 To remove automatic startup while keeping configuration and logs:
 
@@ -57,9 +57,10 @@ The installed EXE and its data directory can then be deleted manually if desired
 
 ```powershell
 dotnet publish .\src\PlexSleepGuard\PlexSleepGuard.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o .\dist
+Rename-Item .\dist\PlexSleepGuard.exe PlexSleepGuard-Setup.exe
 ```
 
-Copy `dist\PlexSleepGuard.exe` to another Windows PC and double-click it. No source code, PowerShell scripts, .NET installation, or separate installer is required. The EXE copies itself to `%LOCALAPPDATA%\PlexSleepGuard\` and registers a per-user logon task.
+Copy `dist\PlexSleepGuard-Setup.exe` to another Windows PC and double-click it. No source code, PowerShell scripts, .NET installation, or separate installer is required. The setup EXE copies itself to `%LOCALAPPDATA%\PlexSleepGuard\PlexSleepGuard.exe` and registers a per-user logon task.
 
 ## Troubleshooting
 

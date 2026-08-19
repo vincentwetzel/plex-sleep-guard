@@ -44,7 +44,9 @@ internal static class Program
             WindowsInstallation.StartInstalled(installedPath);
             UserNotification.ShowInformation(registered
                 ? "PlexSleepGuard is now running in the background.\n\n" +
-                  "You can close this message. PlexSleepGuard will start automatically when you sign in."
+                  $"Installed application:\n{installedPath}\n\n" +
+                  "You can close this message and delete the downloaded setup EXE. " +
+                  "PlexSleepGuard will start automatically when you sign in."
                 : "PlexSleepGuard is running in the background.\n\n" +
                   "It could not update automatic startup, but it is working for now.");
             return registered ? 0 : 1;

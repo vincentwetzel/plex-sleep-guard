@@ -19,10 +19,10 @@ For a self-contained single-file release:
 dotnet publish .\src\PlexSleepGuard\PlexSleepGuard.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o .\.publish\win-x64
 ```
 
-For a user-ready artifact, use `-o .\dist` instead. The resulting `PlexSleepGuard.exe` is the only file another Windows user needs.
+For a user-ready artifact, use `-o .\dist` and rename the result to `PlexSleepGuard-Setup.exe`. That setup EXE is the only file another Windows user needs.
 
 The state-machine and XML parsing tests do not invoke native power APIs. Keep native calls behind `IPowerManager`; use `--test-power-request` for an intentional machine-level diagnostic. Normal production startup is a Windows GUI-subsystem process with no console window; `--console` enables a console and mirrors logs there.
 
 For an isolated local smoke test, set `PLEX_SLEEP_GUARD_DATA_DIR` to a writable directory. Production uses `%LOCALAPPDATA%` when this variable is absent.
 
-The first interactive run invokes the in-process setup wizard. It validates the token, copies the EXE into the per-user application directory, and registers the logon task. The scheduled task starts the installed EXE with `--background`. Do not commit generated output from `bin`, `obj`, `.publish`, or `dist`.
+The first interactive run invokes the in-process setup wizard. It validates the token, displays the final installation path, copies the setup EXE into the per-user application directory as `PlexSleepGuard.exe`, and registers the logon task. The scheduled task starts the installed EXE with `--background`. Do not commit generated output from `bin`, `obj`, `.publish`, or `dist`.

@@ -65,8 +65,7 @@ internal static class WindowsInstallation
 
     private static bool IsPlexSleepGuardProcess(Process process)
     {
-        return string.Equals(process.ProcessName, "PlexSleepGuard", StringComparison.OrdinalIgnoreCase) ||
-               process.ProcessName.StartsWith("PlexSleepGuard (", StringComparison.OrdinalIgnoreCase);
+        return process.ProcessName.StartsWith("PlexSleepGuard", StringComparison.OrdinalIgnoreCase);
     }
 
     public static bool RegisterAtLogon(string executablePath)
