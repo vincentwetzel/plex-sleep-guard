@@ -52,7 +52,7 @@ internal static class UpdateApplier
             {
                 File.Copy(source, target, overwrite: true);
                 TryDelete(source);
-                StartBackground(target);
+                await StartBackgroundAsync(target).ConfigureAwait(false);
                 return 0;
             }
             catch (IOException) when (attempt < 19)
@@ -89,13 +89,23 @@ internal static class UpdateApplier
         }
     }
 
-    private static void StartBackground(string executablePath)
+    private static async Task StartBackgroundAsync(string executablePath)
     {
-        if (TryRunScheduledTask())
+        await Task.Delay(TimeSpan.FromMilliseconds(500)).ConfigureAwait(false);
+        if (TryStartDirect(executablePath))
         {
-            return;
+            await Task.Delay(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
+            if (Process.GetProcessesByName("PlexSleepGuard").Length > 0)
+            {
+                return;
+            }
         }
 
+        _ = TryRunScheduledTask();
+    }
+
+    private static bool TryStartDirect(string executablePath)
+    {
         var startInfo = new ProcessStartInfo
         {
             FileName = executablePath,
@@ -104,7 +114,19 @@ internal static class UpdateApplier
             WindowStyle = ProcessWindowStyle.Hidden,
             Arguments = "--background"
         };
-        _ = Process.Start(startInfo);
+        try
+        {
+            using var process = Process.Start(startInfo);
+            return process is not null;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return false;
+        }
     }
 
     private static bool TryRunScheduledTask()
