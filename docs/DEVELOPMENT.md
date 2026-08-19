@@ -26,3 +26,12 @@ The state-machine and XML parsing tests do not invoke native power APIs. Keep na
 For an isolated local smoke test, set `PLEX_SLEEP_GUARD_DATA_DIR` to a writable directory. Production uses `%LOCALAPPDATA%` when this variable is absent.
 
 The first interactive run invokes the in-process setup wizard. It validates the token, displays the final installation path, copies the setup EXE into the per-user application directory as `PlexSleepGuard.exe`, and registers the logon task. The scheduled task starts the installed EXE with `--background`. Manual launches can update from the latest GitHub release; the updater verifies the release asset digest before replacing the installed EXE. Do not commit generated output from `bin`, `obj`, `.publish`, or `dist`.
+
+## Release checklist
+
+1. Update `<Version>` in `src/PlexSleepGuard/PlexSleepGuard.csproj` to the release version.
+2. Run the Release build and tests.
+3. Publish the self-contained EXE to `dist` and rename it to `PlexSleepGuard-Setup.exe`.
+4. Push the commit and create a matching GitHub tag/release with `PlexSleepGuard-Setup.exe` as the only user download.
+
+The updater expects the latest stable GitHub release to contain an asset named exactly `PlexSleepGuard-Setup.exe`. GitHub Actions performs the publish, rename, and artifact upload automatically; the release asset must use the same name.

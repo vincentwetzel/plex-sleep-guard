@@ -13,7 +13,9 @@ The first launch creates `%LOCALAPPDATA%\PlexSleepGuard\config.json`.
 
 The default bind address is localhost. The token is sent as the `X-Plex-Token` HTTP header and is intentionally excluded from logs, status output, source, and repository files.
 
-The easiest way to configure it is to run `PlexSleepGuard.exe --setup`; it opens a short prompt, hides your pasted token, saves it, and tests it automatically. Treat the token like a password.
+The easiest way to configure it is to download and run `PlexSleepGuard-Setup.exe`; it opens a short prompt, hides your pasted token, saves it, tests it automatically, and reports the final installed path. The installed runtime is `%LOCALAPPDATA%\PlexSleepGuard\PlexSleepGuard.exe`. Treat the token like a password.
+
+After setup, the downloaded setup EXE can be deleted. To change the token later, run the installed executable with `PlexSleepGuard.exe --setup`.
 
 You can also enter it manually in `config.json` if needed.
 

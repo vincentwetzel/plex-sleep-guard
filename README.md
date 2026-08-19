@@ -4,7 +4,7 @@ PlexSleepGuard is a small, headless per-user Windows utility for Plex Media Serv
 
 It never simulates keyboard or mouse input, never changes Windows's last-input timestamp, does not inhibit the display, and is not a Windows Service.
 
-When the installed EXE is launched manually, it checks GitHub for a newer stable release. If one is available, it downloads `PlexSleepGuard-Setup.exe`, verifies GitHub's SHA-256 asset digest, replaces the installed EXE through a short-lived updater process, and restarts the background monitor. Automatic logon launches do not perform the network check.
+When the installed EXE is launched manually, it checks GitHub for a newer stable release. If one is available, it downloads `PlexSleepGuard-Setup.exe`, verifies GitHub's SHA-256 asset digest, replaces the installed EXE through a short-lived updater process, and restarts the background monitor. If GitHub is unavailable, the current version continues running. Automatic logon launches do not perform the network check.
 
 ## Behavior
 
@@ -45,7 +45,7 @@ If upgrading from an older script-based installation, run `PlexSleepGuard.exe --
 
 ## Install and uninstall
 
-No administrator permission is required. Download and run `PlexSleepGuard-Setup.exe`. Setup copies it to `%LOCALAPPDATA%\PlexSleepGuard\PlexSleepGuard.exe`, displays that final path, and registers the limited-permission `PlexSleepGuard` task to start at logon. The downloaded setup EXE is not needed after setup completes.
+No administrator permission is required. Download the latest `PlexSleepGuard-Setup.exe` from the [GitHub Releases page](https://github.com/vincentwetzel/plex-sleep-guard/releases) and run it. Setup copies it to `%LOCALAPPDATA%\PlexSleepGuard\PlexSleepGuard.exe`, displays that final path, and registers the limited-permission `PlexSleepGuard` task to start at logon. The downloaded setup EXE is not needed after setup completes.
 
 To remove automatic startup while keeping configuration and logs:
 
