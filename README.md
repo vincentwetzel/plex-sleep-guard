@@ -4,6 +4,8 @@ PlexSleepGuard is a small, headless per-user Windows utility for Plex Media Serv
 
 It never simulates keyboard or mouse input, never changes Windows's last-input timestamp, does not inhibit the display, and is not a Windows Service.
 
+When the installed EXE is launched manually, it checks GitHub for a newer stable release. If one is available, it downloads `PlexSleepGuard-Setup.exe`, verifies GitHub's SHA-256 asset digest, replaces the installed EXE through a short-lived updater process, and restarts the background monitor. Automatic logon launches do not perform the network check.
+
 ## Behavior
 
 The application uses three states: `IDLE`, `PLAYING`, and `GRACE_PERIOD`. It enters `PLAYING` when one or more relevant Plex sessions exist, starts grace when the final session disappears, returns to `PLAYING` if playback resumes, and returns to `IDLE` when grace expires. Paused sessions are treated as active so a short pause does not make the machine immediately sleep. A failed poll does not count as playback ending.

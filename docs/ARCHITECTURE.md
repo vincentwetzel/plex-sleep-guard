@@ -21,4 +21,4 @@ Direct media children with a media `type` are considered sessions. Only sessions
 
 ## Lifecycle
 
-The setup wizard runs inside the EXE, saves configuration, verifies Plex, copies the current EXE to `%LOCALAPPDATA%\PlexSleepGuard`, and registers a limited-permission `ONLOGON` scheduled task. The task launches the installed EXE with `--background`. Uninstall removes that task but deliberately retains configuration and logs.
+The setup wizard runs inside the EXE, saves configuration, verifies Plex, copies the current EXE to `%LOCALAPPDATA%\PlexSleepGuard`, and registers a limited-permission `ONLOGON` scheduled task. The task launches the installed EXE with `--background`. Manual launches check the latest stable GitHub release, verify the release asset digest, and use a short-lived updater process to replace and restart the installed EXE. Background launches skip the network check. Uninstall removes that task but deliberately retains configuration and logs.

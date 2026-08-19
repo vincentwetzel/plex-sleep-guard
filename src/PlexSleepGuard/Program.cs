@@ -3,6 +3,7 @@ using PlexSleepGuard.Plex;
 using PlexSleepGuard.Power;
 using PlexSleepGuard.Setup;
 using PlexSleepGuard.State;
+using PlexSleepGuard.Update;
 using System.Runtime.InteropServices;
 
 namespace PlexSleepGuard;
@@ -18,7 +19,13 @@ internal static class Program
         var setup = args.Any(static argument => string.Equals(argument, "--setup", StringComparison.OrdinalIgnoreCase));
         var uninstall = args.Any(static argument => string.Equals(argument, "--uninstall", StringComparison.OrdinalIgnoreCase));
         var background = args.Any(static argument => string.Equals(argument, "--background", StringComparison.OrdinalIgnoreCase));
+        var applyUpdate = args.Any(static argument => string.Equals(argument, "--apply-update", StringComparison.OrdinalIgnoreCase));
         var normalLaunch = args.Length == 0;
+
+        if (applyUpdate)
+        {
+            return await UpdateApplier.RunAsync(args).ConfigureAwait(false);
+        }
 
         if (uninstall)
         {
@@ -40,6 +47,14 @@ internal static class Program
         {
             WindowsInstallation.StopOtherInstances();
             var installedPath = WindowsInstallation.EnsureInstalledExecutable();
+            if (await GitHubReleaseUpdater.TryStartUpdateAsync(installedPath).ConfigureAwait(false))
+            {
+                UserNotification.ShowInformation(
+                    "A newer PlexSleepGuard version was found.\n\n" +
+                    "It is being installed now and will start automatically when finished.");
+                return 0;
+            }
+
             var registered = WindowsInstallation.RegisterAtLogon(installedPath);
             WindowsInstallation.StartInstalled(installedPath);
             UserNotification.ShowInformation(registered
@@ -67,9 +82,17 @@ internal static class Program
             return 0;
         }
 
-            if (normalLaunch)
+        if (normalLaunch)
+        {
+            if (await GitHubReleaseUpdater.TryStartUpdateAsync(WindowsInstallation.InstalledExecutablePath).ConfigureAwait(false))
             {
                 UserNotification.ShowInformation(
+                    "A newer PlexSleepGuard version was found.\n\n" +
+                    "It is being installed now and will start automatically when finished.");
+                return 0;
+            }
+
+            UserNotification.ShowInformation(
                     "PlexSleepGuard is now running in the background.\n\n" +
                     "It will monitor Plex and help Windows sleep after playback ends.\n\n" +
                     "You can close this message; nothing else is needed.");
