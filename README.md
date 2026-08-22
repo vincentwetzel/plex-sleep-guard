@@ -1,6 +1,6 @@
 # PlexSleepGuard
 
-PlexSleepGuard is a small, headless, per-user Windows utility for Plex Media Server. It polls Plex's local `/status/sessions` API and, after the final active session ends, holds a Windows `PowerRequestSystemRequired` request during a configurable grace period. This covers the gap where Windows' idle timer has already expired while Plex was playing.
+PlexSleepGuard is a small, headless, per-user Windows utility for Plex Media Server. It polls Plex's local `/status/sessions` API and holds a Windows `PowerRequestSystemRequired` request during active playback and a configurable post-playback grace period. This prevents Windows' idle timer from expiring during playback and covers the transition after playback ends.
 
 It does not simulate keyboard or mouse input, change Windows' last-input timestamp, inhibit the display, or install a Windows Service. It targets Windows x64 and ships as a self-contained single-file EXE.
 
@@ -11,10 +11,10 @@ Manual launches check GitHub for a newer stable release. A newer `PlexSleepGuard
 The monitor uses three states:
 
 - `IDLE`: no relevant Plex session is active and no power request is held.
-- `PLAYING`: one or more relevant Plex sessions are active.
-- `GRACE_PERIOD`: the final session has ended; a system-required power request is held until the grace period expires.
+- `PLAYING`: one or more relevant Plex sessions are active; a system-required power request is held.
+- `GRACE_PERIOD`: the final session has ended; the same system-required power request remains held until the grace period expires.
 
-Paused and buffering-like sessions count as active. A successful poll with no active sessions starts grace. A failed or timed-out poll does not mean playback ended and leaves the last known state unchanged. If playback resumes during grace, the request is cleared immediately. The request is also cleared on expiration, cancellation, and controlled shutdown; it never requests display-required behavior.
+Paused and buffering-like sessions count as active. A successful poll with no active sessions starts grace. A failed or timed-out poll does not mean playback ended and leaves the last known state unchanged. If playback resumes during grace, the request remains active. The request is cleared when grace expires, on cancellation, and on controlled shutdown; it never requests display-required behavior.
 
 ## Install
 

@@ -191,23 +191,24 @@ internal static class Program
                 if (transition.From == PlaybackState.Idle)
                 {
                     log.Information("PLAYING detected.");
+                    log.Information("Windows system sleep inhibition enabled for active Plex playback.");
                 }
                 else
                 {
-                    log.Information("Playback resumed; grace-period sleep inhibition released.");
+                    log.Information("Playback resumed; system sleep inhibition retained.");
                 }
 
-                powerLease.Release();
+                powerLease.Apply(PlaybackState.Playing);
                 lastGraceLog = null;
                 break;
             case PlaybackState.GracePeriod:
                 log.Information($"Playback ended; grace period started and will end at {transition.GraceEndsAt:O}.");
-                powerLease.Acquire();
+                powerLease.Apply(PlaybackState.GracePeriod);
                 lastGraceLog = transition.At;
                 break;
             case PlaybackState.Idle:
                 log.Information("Grace period expired; returning to IDLE.");
-                powerLease.Release();
+                powerLease.Apply(PlaybackState.Idle);
                 lastGraceLog = null;
                 break;
         }
@@ -277,44 +278,6 @@ internal static class Program
         lease.Release();
         Console.WriteLine("System-required power request cleared.");
         return 0;
-    }
-
-    private sealed class PowerLeaseController : IDisposable
-    {
-        private readonly IPowerManager manager;
-        private readonly ILog log;
-        private IDisposable? lease;
-
-        public PowerLeaseController(IPowerManager manager, ILog log)
-        {
-            this.manager = manager;
-            this.log = log;
-        }
-
-        public void Acquire()
-        {
-            if (lease is not null)
-            {
-                return;
-            }
-
-            lease = manager.AcquireSystemRequired("PlexSleepGuard post-playback grace period");
-            log.Information("Windows power request created and set (system required only; display is not inhibited).");
-        }
-
-        public void Release()
-        {
-            var current = Interlocked.Exchange(ref lease, null);
-            if (current is null)
-            {
-                return;
-            }
-
-            current.Dispose();
-            log.Information("Windows power request cleared.");
-        }
-
-        public void Dispose() => Release();
     }
 
     internal static class ConsoleMode

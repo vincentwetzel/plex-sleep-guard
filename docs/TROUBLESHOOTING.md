@@ -18,13 +18,13 @@ Invoke-WebRequest http://127.0.0.1:32400/identity
 
 A 401 or 403 response usually means that the token is missing or invalid. Update it with `PlexSleepGuard.exe --setup`. Check that the configured server URL is reachable and that Windows or security software is not blocking local HTTP.
 
-During grace, run this from another terminal:
+During playback or grace, run this from another terminal:
 
 ```powershell
 powercfg /requests
 ```
 
-The request reason should include `PlexSleepGuard post-playback grace period`. Only system-required behavior is requested; the display is not inhibited. `--test-power-request` provides a controlled 60-second diagnostic for the same native power path:
+The request reason should include `PlexSleepGuard Plex playback and post-playback grace period`. Only system-required behavior is requested; the display is not inhibited. `--test-power-request` provides a controlled 60-second diagnostic for the same native power path:
 
 ```powershell
 PlexSleepGuard.exe --test-power-request
@@ -34,4 +34,4 @@ If setup reports that Plex works but automatic startup could not be created, run
 
 Manual launches may check GitHub for a newer stable release. The downloaded asset is verified before installation, and the monitor is restarted afterward. If an update appears to finish but the monitor is not running, launch `%LOCALAPPDATA%\PlexSleepGuard\PlexSleepGuard.exe` once. GitHub being unavailable does not disable the installed version. Review the Windows Application event log if Windows reports an application error.
 
-If playback resumes during grace, the request is cleared immediately. Paused sessions count as active, so a short pause does not start grace. The request is also cleared when grace expires or the process shuts down.
+The request is held during active playback, remains held if playback resumes during grace, and is cleared when grace expires or the process shuts down. Paused sessions count as active, so a short pause does not start grace.

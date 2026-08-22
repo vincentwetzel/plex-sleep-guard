@@ -20,7 +20,7 @@ The parser considers direct XML media children with a media `type`. Sessions who
 
 ## State and power lifecycle
 
-The normal power lease exists only in `GRACE_PERIOD`. A successful empty-session observation transitions from `PLAYING` to grace and acquires the system-required request. A successful active observation during grace transitions back to `PLAYING` and releases it. Expiration transitions to `IDLE` and releases it. The monitor also releases the lease in its `finally` path, so cancellation and controlled failures clear the request.
+The normal power lease exists in `PLAYING` and remains active through `GRACE_PERIOD`. A successful active observation transitions to `PLAYING` and acquires the system-required request before the idle timer can expire. A successful empty-session observation transitions from `PLAYING` to grace and retains the request. A successful active observation during grace transitions back to `PLAYING` and retains it. Expiration transitions to `IDLE` and releases it. The monitor also releases the lease in its `finally` path, so cancellation and controlled failures clear the request.
 
 The separate `--test-power-request` path intentionally holds the same system-required request for 60 seconds. Status mode performs one poll and never creates a request.
 
