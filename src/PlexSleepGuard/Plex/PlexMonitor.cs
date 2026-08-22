@@ -21,6 +21,10 @@ public sealed class PlexMonitor : IDisposable
 
     public async Task<PlexPollResult> PollAsync(CancellationToken cancellationToken)
     {
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+        var activeToken = linkedCts.Token;
+
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, $"{configuration.PlexServerUrl}/status/sessions");
@@ -30,7 +34,7 @@ public sealed class PlexMonitor : IDisposable
                 request.Headers.Add("X-Plex-Token", configuration.PlexToken);
             }
 
-            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, activeToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
                 var error = $"Plex returned HTTP {(int)response.StatusCode} ({response.ReasonPhrase}).";
@@ -38,10 +42,9 @@ public sealed class PlexMonitor : IDisposable
                 return PlexPollResult.Failed(error);
             }
 
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            var document = await XDocument.LoadAsync(stream, LoadOptions.None, cancellationToken).ConfigureAwait(false);
+            await using var stream = await response.Content.ReadAsStreamAsync(activeToken).ConfigureAwait(false);
+            var document = await XDocument.LoadAsync(stream, LoadOptions.None, activeToken).ConfigureAwait(false);
             var sessions = ParseSessions(document);
-            log.Information($"Plex reachable; {sessions.Count} relevant playback session(s) detected.");
             return PlexPollResult.Succeeded(sessions);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

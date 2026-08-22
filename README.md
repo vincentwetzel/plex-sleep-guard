@@ -1,18 +1,33 @@
 # PlexSleepGuard
 
-PlexSleepGuard is a small, headless per-user Windows utility for Plex Media Server. It polls Plex's local `/status/sessions` API and, only after the final active playback session ends, holds a Windows `PowerRequestSystemRequired` request for a configurable grace period. This covers the gap where Windows's idle timer has already expired while Plex was playing.
+PlexSleepGuard is a small, headless, per-user Windows utility for Plex Media Server. It polls Plex's local `/status/sessions` API and, after the final active session ends, holds a Windows `PowerRequestSystemRequired` request during a configurable grace period. This covers the gap where Windows' idle timer has already expired while Plex was playing.
 
-It never simulates keyboard or mouse input, never changes Windows's last-input timestamp, does not inhibit the display, and is not a Windows Service.
+It does not simulate keyboard or mouse input, change Windows' last-input timestamp, inhibit the display, or install a Windows Service. It targets Windows x64 and ships as a self-contained single-file EXE.
 
-When the installed EXE is launched manually, it checks GitHub for a newer stable release. If one is available, it downloads `PlexSleepGuard-Setup.exe`, verifies GitHub's SHA-256 asset digest, replaces the installed EXE through a short-lived updater process, and restarts the background monitor. If GitHub is unavailable, the current version continues running. Automatic logon launches do not perform the network check.
+Manual launches check GitHub for a newer stable release. A newer `PlexSleepGuard-Setup.exe` is downloaded, checked against GitHub's SHA-256 asset digest, installed, and started. Automatic logon launches use `--background` and skip the network check. If GitHub is unavailable, the current version continues running.
 
 ## Behavior
 
-The application uses three states: `IDLE`, `PLAYING`, and `GRACE_PERIOD`. It enters `PLAYING` when one or more relevant Plex sessions exist, starts grace when the final session disappears, returns to `PLAYING` if playback resumes, and returns to `IDLE` when grace expires. Paused sessions are treated as active so a short pause does not make the machine immediately sleep. A failed poll does not count as playback ending.
+The monitor uses three states:
+
+- `IDLE`: no relevant Plex session is active and no power request is held.
+- `PLAYING`: one or more relevant Plex sessions are active.
+- `GRACE_PERIOD`: the final session has ended; a system-required power request is held until the grace period expires.
+
+Paused and buffering-like sessions count as active. A successful poll with no active sessions starts grace. A failed or timed-out poll does not mean playback ended and leaves the last known state unchanged. If playback resumes during grace, the request is cleared immediately. The request is also cleared on expiration, cancellation, and controlled shutdown; it never requests display-required behavior.
+
+## Install
+
+1. Download `PlexSleepGuard-Setup.exe` from the [GitHub Releases page](https://github.com/vincentwetzel/plex-sleep-guard/releases).
+2. Run it on Windows. No administrator permission is required.
+3. Paste the Plex token when prompted. Setup validates it, copies the EXE to `%LOCALAPPDATA%\PlexSleepGuard\PlexSleepGuard.exe`, registers the limited-permission `PlexSleepGuard` logon task, and starts the monitor.
+4. Delete the downloaded setup EXE after setup reports the installed path.
+
+The first interactive run also performs setup when no configuration exists. Setup and the installed app are the same executable; no script, runtime installation, or separate installer is required.
 
 ## Configuration
 
-On first launch, the application creates `%LOCALAPPDATA%\PlexSleepGuard\config.json`:
+The first run creates `%LOCALAPPDATA%\PlexSleepGuard\config.json`:
 
 ```json
 {
@@ -23,49 +38,39 @@ On first launch, the application creates `%LOCALAPPDATA%\PlexSleepGuard\config.j
 }
 ```
 
-The token is never logged. A Plex token can be obtained from a Plex client or server request (see [docs/CONFIGURATION.md](docs/CONFIGURATION.md)); it must be placed only in the per-user config file and never committed.
+Polling is clamped to 1–3600 seconds and grace to 0–1440 minutes. Invalid server URLs fall back to the localhost default, and trailing slashes are removed. The token is sent as `X-Plex-Token` and is never logged or printed by `--status`.
 
-Logs are plain text under `%LOCALAPPDATA%\PlexSleepGuard\Logs\`, with approximately seven days of retention.
+For isolated development or smoke tests, set `PLEX_SLEEP_GUARD_DATA_DIR` to a writable directory. This replaces `%LOCALAPPDATA%` as the parent of the `PlexSleepGuard` data directory for configuration and logs. Never commit a real token or put one in command history or issue reports. See [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
-## Run and diagnostics
+## Command-line switches
 
-From the installed or published EXE:
+Run these against the installed `PlexSleepGuard.exe` unless noted otherwise:
 
-```powershell
-PlexSleepGuard.exe --status
-PlexSleepGuard.exe --status --quiet
-PlexSleepGuard.exe --setup
-PlexSleepGuard.exe --test-power-request
-PlexSleepGuard.exe --console
-```
+| Switch | Purpose |
+| --- | --- |
+| *(no switch)* | Start the monitor. A downloaded EXE installs itself first; an installed manual launch checks for updates. |
+| `--status` | Poll Plex once, print non-secret configuration and active sessions, then exit. Exit code `0` means the request succeeded; `1` means it failed. No power request is created. |
+| `--quiet` | With `--status`, suppress status output while retaining the exit code. |
+| `--setup` | Prompt for a new token, validate Plex, install/update the EXE, and register automatic startup. |
+| `--uninstall` | Remove the `PlexSleepGuard` logon task. Configuration, logs, and the EXE are retained. |
+| `--test-power-request` | Hold a system-required request for 60 seconds; inspect it from another terminal with `powercfg /requests`. |
+| `--console` | Allocate a console and mirror log output there. Combine with the monitor or diagnostics when troubleshooting. |
+| `--background` | Internal logon-task mode. It starts the monitor without the manual-launch update check. |
 
-Double-clicking `PlexSleepGuard-Setup.exe` the first time opens a short setup prompt, saves the token, installs automatic startup, and launches the background monitor. Setup shows the exact installed path; the downloaded setup EXE can then be deleted. Later double-clicks confirm that the installed app is running in the background; starting a second copy is prevented. `--status` queries Plex and exits without creating a power request; run it as `PlexSleepGuard.exe --status` from PowerShell. Add `--quiet` to suppress status output while retaining the exit code. `--setup` changes the token. `--uninstall` removes automatic startup while retaining configuration and logs. `--test-power-request` holds the system-required request for about 60 seconds; inspect it from another terminal with `powercfg /requests`. `--background` is used by the logon task and is normally not run manually.
+`--apply-update`, `--source`, `--target`, and `--wait-pid` are internal updater arguments and are not intended for manual use.
 
-If upgrading from an older script-based installation, run `PlexSleepGuard.exe --setup` once so the EXE can replace the old installation and update the startup task.
+## Updating and uninstalling
 
-## Install and uninstall
+Manual launches update only when a newer stable GitHub release contains an asset named exactly `PlexSleepGuard-Setup.exe` with a SHA-256 digest. The update process replaces the installed EXE and restarts the background monitor. A failed check or failed update does not prevent the current installation from running.
 
-No administrator permission is required. Download the latest `PlexSleepGuard-Setup.exe` from the [GitHub Releases page](https://github.com/vincentwetzel/plex-sleep-guard/releases) and run it. Setup copies it to `%LOCALAPPDATA%\PlexSleepGuard\PlexSleepGuard.exe`, displays that final path, and registers the limited-permission `PlexSleepGuard` task to start at logon. The downloaded setup EXE is not needed after setup completes.
-
-To remove automatic startup while keeping configuration and logs:
+To remove automatic startup while retaining local data:
 
 ```powershell
 PlexSleepGuard.exe --uninstall
 ```
 
-The installed EXE and its data directory can then be deleted manually if desired. `--uninstall` does not delete the token, configuration, or logs.
+Delete `%LOCALAPPDATA%\PlexSleepGuard` manually only if you also want to remove the configuration and logs.
 
-## For developers
+## Developers
 
-```powershell
-dotnet publish .\src\PlexSleepGuard\PlexSleepGuard.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o .\dist
-Rename-Item .\dist\PlexSleepGuard.exe PlexSleepGuard-Setup.exe
-```
-
-Copy `dist\PlexSleepGuard-Setup.exe` to another Windows PC and double-click it. No source code, PowerShell scripts, .NET installation, or separate installer is required. The setup EXE copies itself to `%LOCALAPPDATA%\PlexSleepGuard\PlexSleepGuard.exe` and registers a per-user logon task.
-
-## Troubleshooting
-
-Check `powercfg /requests` during a grace period and review the current day's log. Confirm Plex is listening on `127.0.0.1:32400`, the token is valid, and Windows or security software is not blocking local HTTP. More troubleshooting details are in [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
-
-See [docs/CONFIGURATION.md](docs/CONFIGURATION.md), [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md), and [agents.md](agents.md) for more detail.
+Requirements are Windows x64 and the .NET 10 SDK. Build, test, and publish commands are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Architecture details, configuration guidance, and troubleshooting are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/CONFIGURATION.md](docs/CONFIGURATION.md), and [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
