@@ -12,6 +12,7 @@ PlexSleepGuard is a single-process, per-user Windows application targeting `net1
 - `PlexMonitor` serializes one HTTP request to `/status/sessions`, sends `X-Plex-Token` when configured, bounds each poll, and parses direct XML media children.
 - `PlaybackStateMachine` is pure state/timing logic. It receives only successful observations; failed polls leave the last known state untouched.
 - `WindowsPowerManager` is the native boundary. It uses a safe handle with `PowerCreateRequest`, `PowerSetRequest`, and `PowerClearRequest`, requesting `PowerRequestSystemRequired` only.
+- `WindowsPowerRequestDiagnostics` invokes the built-in `powercfg /requests` command periodically while the lease is active, recording the request visibility and reason in the application log.
 - `GitHubReleaseUpdater` checks the latest stable release on manual launch, validates the named setup asset's SHA-256 digest, and hands off replacement to `UpdateApplier`.
 
 ## Session policy
@@ -23,6 +24,8 @@ The parser considers direct XML media children with a media `type`. Sessions who
 The normal power lease exists in `PLAYING` and remains active through `GRACE_PERIOD`. A successful active observation transitions to `PLAYING` and acquires the system-required request before the idle timer can expire. A successful empty-session observation transitions from `PLAYING` to grace and retains the request. A successful active observation during grace transitions back to `PLAYING` and retains it. Expiration transitions to `IDLE` and releases it. The monitor also releases the lease in its `finally` path, so cancellation and controlled failures clear the request.
 
 The separate `--test-power-request` path intentionally holds the same system-required request for 60 seconds. Status mode performs one poll and never creates a request.
+
+The monitor logs each poll outcome, current state, lease status, and the timestamp of the last successful poll. A monitor-loop gap substantially longer than the configured interval is logged as a warning because it may indicate sleep, process suspension, or a stalled process.
 
 ## Startup and updates
 

@@ -28,9 +28,9 @@ Rename-Item .\dist\PlexSleepGuard.exe PlexSleepGuard-Setup.exe
 
 ## Release checklist
 
-1. Update `<Version>` in `src/PlexSleepGuard/PlexSleepGuard.csproj`.
+1. Update `<Version>` in `src/PlexSleepGuard/PlexSleepGuard.csproj` and create the matching `v<Version>` tag.
 2. Run the Release build and tests.
 3. Publish the self-contained EXE to `dist` and rename it to `PlexSleepGuard-Setup.exe`.
-4. Create a matching GitHub release/tag and upload `PlexSleepGuard-Setup.exe` as the user download.
+4. Create a GitHub release for the matching tag and upload `PlexSleepGuard-Setup.exe` as the user download. Verify that GitHub exposes a SHA-256 digest for the asset; the updater uses that digest before installation.
 
-The updater expects the latest stable GitHub release to contain an asset named exactly `PlexSleepGuard-Setup.exe` and a SHA-256 asset digest. The GitHub Actions workflow performs the Release test, publish, rename, and artifact upload for CI builds.
+The updater expects the latest stable GitHub release to contain an asset named exactly `PlexSleepGuard-Setup.exe` and a SHA-256 asset digest. The GitHub Actions workflow performs the Release test, publish, rename, and artifact upload for CI builds; it does not create the GitHub Release automatically.

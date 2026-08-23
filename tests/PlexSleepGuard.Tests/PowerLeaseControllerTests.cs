@@ -14,6 +14,7 @@ public sealed class PowerLeaseControllerTests
 
         controller.Apply(PlaybackState.Playing);
         Assert.Equal(1, powerManager.ActiveLeaseCount);
+        Assert.True(controller.IsActive);
         Assert.Single(powerManager.Reasons);
         Assert.Contains("playback", powerManager.Reasons[0], StringComparison.OrdinalIgnoreCase);
 
@@ -22,6 +23,7 @@ public sealed class PowerLeaseControllerTests
 
         controller.Apply(PlaybackState.Idle);
         Assert.Equal(0, powerManager.ActiveLeaseCount);
+        Assert.False(controller.IsActive);
     }
 
     private sealed class TestPowerManager : IPowerManager

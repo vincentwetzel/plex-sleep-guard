@@ -10,6 +10,8 @@ public sealed class PowerLeaseController : IDisposable
     private readonly ILog log;
     private IDisposable? lease;
 
+    public bool IsActive => Volatile.Read(ref lease) is not null;
+
     public PowerLeaseController(IPowerManager manager, ILog log)
     {
         this.manager = manager;

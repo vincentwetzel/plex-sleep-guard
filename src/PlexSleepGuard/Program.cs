@@ -149,8 +149,12 @@ internal static class Program
         using var monitor = new PlexMonitor(configuration, log);
         IPowerManager powerManager = new WindowsPowerManager();
         using var powerLease = new PowerLeaseController(powerManager, log);
+        var powerDiagnostics = new WindowsPowerRequestDiagnostics();
         var machine = new PlaybackStateMachine(TimeSpan.FromMinutes(configuration.GracePeriodMinutes));
         DateTimeOffset? lastGraceLog = null;
+        DateTimeOffset? lastSuccessfulPoll = null;
+        var lastDiagnostic = DateTimeOffset.MinValue;
+        var lastLoopStarted = DateTimeOffset.Now;
         log.Information("Monitor started. Paused Plex sessions are treated as active; transient polling failures preserve the last known state.");
 
         try
@@ -158,15 +162,35 @@ internal static class Program
             while (true)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                var loopStarted = DateTimeOffset.Now;
+                var loopGap = loopStarted - lastLoopStarted;
+                if (loopGap > TimeSpan.FromSeconds(Math.Max(30, configuration.PollIntervalSeconds * 3)))
+                {
+                    log.Warning($"Monitor loop gap detected: {loopGap.TotalSeconds:F1}s since the previous loop; Windows sleep, process suspension, or a stalled process may have occurred.");
+                }
+
+                lastLoopStarted = loopStarted;
                 var result = await monitor.PollAsync(cancellationToken).ConfigureAwait(false);
                 if (result.Success)
                 {
+                    lastSuccessfulPoll = DateTimeOffset.Now;
                     var active = result.Sessions.Any(static session => session.IsActive);
+                    log.Information($"Plex poll succeeded: active sessions={result.Sessions.Count}; observed active={active}; state before transition={machine.State}; power lease active={powerLease.IsActive}.");
                     ApplyTransition(machine.ObserveActive(active, DateTimeOffset.Now), powerLease, log, ref lastGraceLog);
+                }
+                else
+                {
+                    log.Warning($"Plex poll failed; preserving state={machine.State}; last successful poll={lastSuccessfulPoll?.ToString("O") ?? "never"}; power lease active={powerLease.IsActive}.");
                 }
 
                 ApplyTransition(machine.Advance(DateTimeOffset.Now), powerLease, log, ref lastGraceLog);
                 LogGraceRemaining(machine, log, ref lastGraceLog);
+                if (powerLease.IsActive && DateTimeOffset.Now - lastDiagnostic >= TimeSpan.FromMinutes(1))
+                {
+                    log.Information($"Power request diagnostic: {powerDiagnostics.Capture()}");
+                    lastDiagnostic = DateTimeOffset.Now;
+                }
+
                 await Task.Delay(TimeSpan.FromSeconds(configuration.PollIntervalSeconds), cancellationToken).ConfigureAwait(false);
             }
         }

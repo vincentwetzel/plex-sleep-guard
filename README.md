@@ -16,6 +16,8 @@ The monitor uses three states:
 
 Paused and buffering-like sessions count as active. A successful poll with no active sessions starts grace. A failed or timed-out poll does not mean playback ended and leaves the last known state unchanged. If playback resumes during grace, the request remains active. The request is cleared when grace expires, on cancellation, and on controlled shutdown; it never requests display-required behavior.
 
+While playback protection is active, the log records poll results and a periodic `powercfg /requests` snapshot. This makes it possible to verify whether Windows still sees the system-required request. It also records unusually long monitor-loop gaps, which can indicate that Windows slept or the process was suspended.
+
 ## Install
 
 1. Download `PlexSleepGuard-Setup.exe` from the [GitHub Releases page](https://github.com/vincentwetzel/plex-sleep-guard/releases).
@@ -54,7 +56,7 @@ Run these against the installed `PlexSleepGuard.exe` unless noted otherwise:
 | `--setup` | Prompt for a new token, validate Plex, install/update the EXE, and register automatic startup. |
 | `--uninstall` | Remove the `PlexSleepGuard` logon task. Configuration, logs, and the EXE are retained. |
 | `--test-power-request` | Hold a system-required request for 60 seconds; inspect it from another terminal with `powercfg /requests`. |
-| `--console` | Allocate a console and mirror log output there. Combine with the monitor or diagnostics when troubleshooting. |
+| `--console` | Allocate a console and mirror monitor log output there. Useful when troubleshooting alongside `powercfg /requests`. |
 | `--background` | Internal logon-task mode. It starts the monitor without the manual-launch update check. |
 
 `--apply-update`, `--source`, `--target`, and `--wait-pid` are internal updater arguments and are not intended for manual use.

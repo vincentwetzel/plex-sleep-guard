@@ -10,6 +10,8 @@ It reports the server URL, normalized intervals, whether a token is configured, 
 
 Check `%LOCALAPPDATA%\PlexSleepGuard\Logs\` for the current day's log. Relevant entries include HTTP errors, XML/network errors, state transitions, grace-period progress, and power-request creation or release. A poll has a bounded timeout; a failed or timed-out request preserves the last known playback state and does not start grace by itself.
 
+While the power lease is active, the monitor records a `powercfg /requests` snapshot approximately once per minute. It also records every poll result, the last successful poll time, lease status, and unusually long monitor-loop gaps. A loop-gap warning can indicate that Windows slept, the process was suspended, or the process was stalled. The diagnostic snapshot should contain the PlexSleepGuard process under `SYSTEM:` and the reason `PlexSleepGuard Plex playback and post-playback grace period`.
+
 Confirm that Plex is running and that this URL responds:
 
 ```powershell
