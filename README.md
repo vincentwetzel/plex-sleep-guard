@@ -76,3 +76,5 @@ Delete `%LOCALAPPDATA%\PlexSleepGuard` manually only if you also want to remove 
 ## Developers
 
 Requirements are Windows x64 and the .NET 10 SDK. Build, test, and publish commands are in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Architecture details, configuration guidance, and troubleshooting are documented in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/CONFIGURATION.md](docs/CONFIGURATION.md), and [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
+
+Release history is in [docs/RELEASE_NOTES.md](docs/RELEASE_NOTES.md).
